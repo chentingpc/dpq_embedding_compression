@@ -1,0 +1,16 @@
+*~
+*.pyc
+.ipynb_checkpoints
+*.gch
+*.d
+*.o
+*.tar.gz
+*.DS_Store
+result
+results
+data
+bazel-bin
+bazel-genfiles
+bazel-out
+bazel-testlogs
+*.pdf
