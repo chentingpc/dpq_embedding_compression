@@ -38,3 +38,7 @@ Please cite [our paper](https://arxiv.org/abs/1908.xxxx) if you find it helpful 
   year={2019},
 }
 ```
+
+## Acknowledgement
+
+The language model is modified from [tenorflow's ptb tutorial](https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb), and NMT model is modified from [tensorflow/nmt](https://github.com/tensorflow/nmt). We would like to thank the original creators of these models.
