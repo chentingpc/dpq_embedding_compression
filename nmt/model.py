@@ -618,7 +618,7 @@ class BaseModel(object):
       source_sequence_length: sequence length of encoder_outputs.
 
     Returns:
-      A tuple of a multi-layer RNN cell used by decoder and the intial state of
+      A tuple of a multi-layer RNN cell used by decoder and the initial state of
       the decoder RNN.
     """
     pass

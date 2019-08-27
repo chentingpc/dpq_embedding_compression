@@ -167,7 +167,7 @@ def add_arguments(parser):
       """)
   parser.add_argument("--embed_prefix", type=str, default=None, help="""\
       Pretrained embedding prefix, expect files with src/tgt suffixes.
-      The embedding files should be Glove formated txt files.\
+      The embedding files should be Glove formatted txt files.\
       """)
   parser.add_argument("--sos", type=str, default="<s>",
                       help="Start-of-sentence symbol.")

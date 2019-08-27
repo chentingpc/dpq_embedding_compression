@@ -248,7 +248,7 @@ def _create_pretrained_emb_from_txt(
   """Load pretrain embeding from embed_file, and return an embedding matrix.
 
   Args:
-    embed_file: Path to a Glove formated embedding txt file.
+    embed_file: Path to a Glove formatted embedding txt file.
     num_trainable_tokens: Make the first n tokens in the vocab file as trainable
       variables. Default is 3, which is "<unk>", "<s>" and "</s>".
   """
@@ -622,7 +622,7 @@ def avg_checkpoints(model_dir, num_last_checkpoints, global_step,
   if len(checkpoints) < num_last_checkpoints:
     utils.print_out(
         "# Skipping averaging checkpoints because not enough checkpoints is "
-        "avaliable."
+        "available."
     )
     return None
 

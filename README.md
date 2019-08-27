@@ -1,7 +1,7 @@
-Differentiable embedding compression with KD codes
+Differentiable Product Quantization for Embedding Compression
 ================================================================================
 
-This is code for [our paper](https://arxiv.org/abs/1908.xxxx) on compressing the embedding table with end-to-end learned KD codes via differentiable product quantization.
+This is code for [our paper](https://arxiv.org/abs/1908.09756) on compressing the embedding table with end-to-end learned KD codes via differentiable product quantization (DPQ).
 
 ## Requirements
 
@@ -30,11 +30,11 @@ For text classification datasets (other than ag_news), please download them from
 Please cite [our paper](https://arxiv.org/abs/1908.xxxx) if you find it helpful in your own work:
 
 ```
-@article{kdq2019,
+@article{dpq2019,
   title={Differentiable Product Quantization for End-to-End Embedding Compression,
   author={Ting Chen, Yizhou Sun}
   journal={CoRR},
-  volume={abs/1908.xxxx},
+  volume={abs/1908.09756},
   year={2019},
 }
 ```
