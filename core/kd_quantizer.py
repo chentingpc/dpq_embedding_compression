@@ -51,19 +51,23 @@ class KDQuantizer(object):
 
     # Create centroids for keys and values.
     D_to_create = 1 if shared_centroids else D
-    centroids_k = tf.get_variable("centroids_k", [D_to_create, K, d_in])
+    centroids_k = tf.get_variable(
+        "centroids_k",
+        [D_to_create, K, d_in],
+        initializer=tf.random_uniform_initializer(-0.02, 0.02))
     if tie_in_n_out:
       centroids_v = centroids_k
     else:
-      centroids_v = tf.get_variable("centroids_v", [D_to_create, K, d_out])
+      centroids_v = tf.get_variable(
+          "centroids_v",
+          [D_to_create, K, d_out],
+          initializer=tf.random_uniform_initializer(-0.02, 0.02))
     if shared_centroids:
       if tie_in_n_out and query_metric == "euclidean":
         pass  # more efficient implementation for euclidean distance vq.
       else:
         centroids_k = tf.tile(centroids_k, [D, 1, 1])
         centroids_v = tf.tile(centroids_v, [D, 1, 1])
-    self._centroids_k = centroids_k
-    self._centroids_v = centroids_v
     self._centroids_k = centroids_k
     self._centroids_v = centroids_v
 
@@ -90,13 +94,18 @@ class KDQuantizer(object):
       if self._query_metric == "euclidean":
         response = -tf.reduce_sum(
             (tf.expand_dims(inputs, 2) - tf.expand_dims(centroids_k, 0))**2, -1)
+        # Alternative computation:
+        # norm_1 = tf.reduce_sum(inputs**2, -1, keep_dims=True)  # (bs, D, 1)
+        # norm_2 = tf.expand_dims(tf.reduce_sum(centroids_k**2, -1), 0)  # (1, D, K)
+        # dot = tf.matmul(centroids_k, tf.transpose(inputs, perm=[1, 2, 0]))  # (D, K, bs)
+        # response = -norm_1 + 2 * tf.transpose(dot, perm=[2, 0, 1]) - norm_2
       elif self._query_metric == "cosine":
         inputs = tf.nn.l2_normalize(inputs, -1)
         centroids_k = tf.nn.l2_normalize(centroids_k, -1)
-        response = -tf.reduce_sum(
+        response = tf.reduce_sum(
             (tf.expand_dims(inputs, 2) * tf.expand_dims(centroids_k, 0)), -1)
       elif self._query_metric == "dot":
-        response = -tf.reduce_sum(
+        response = tf.reduce_sum(
             (tf.expand_dims(inputs, 2) * tf.expand_dims(centroids_k, 0)), -1)
       else:
         raise ValueError("Unknown metric {}".format(self._query_metric))
@@ -134,12 +143,13 @@ class KDQuantizer(object):
         nb_idxs_onehot = response_prob - tf.stop_gradient(
             response_prob - nb_idxs_onehot)
         # nb_idxs_onehot = response_prob  # use continuous output
-        centroids_v_bsize = tf.tile(
-            tf.expand_dims(centroids_v, 0),
-            [tf.shape(inputs)[0], 1, 1, 1])  # (batch_size, D, K, d_out)
-        outputs_final = tf.matmul(tf.expand_dims(nb_idxs_onehot, 2),
-                                  centroids_v_bsize)
-        outputs_final = tf.reshape(outputs_final, [-1, self._D, self._d_out])
+
+        outputs = tf.matmul(
+            tf.transpose(nb_idxs_onehot, [1, 0, 2]),  # (D, bs, K)
+            centroids_v)  # (D, bs, d)
+        outputs_final = tf.reshape(
+            tf.transpose(outputs, [1, 0, 2]),
+            [-1, self._D, self._d_out])
 
       # Add regularization for updating centroids / stabilization.
       if is_training:

@@ -43,7 +43,7 @@ def kdq_embed(input, vocab_size, emb_size, hparams=None,
   d_out = d if hparams.additive_quantization else d//D
   out_size = [D, emb_size] if hparams.additive_quantization else [emb_size]
 
-  with tf.variable_scope(name):
+  with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
     query_wemb = tf.get_variable(
         "query_wemb", [vocab_size, D * d_in], dtype=tf.float32)
     idxs = tf.reshape(input, [-1])
