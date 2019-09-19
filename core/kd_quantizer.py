@@ -63,10 +63,10 @@ class KDQuantizer(object):
           [D_to_create, K, d_out],
           initializer=tf.random_uniform_initializer(-0.02, 0.02))
     if shared_centroids:
-      if tie_in_n_out and query_metric == "euclidean":
-        pass  # more efficient implementation for euclidean distance vq.
+      centroids_k = tf.tile(centroids_k, [D, 1, 1])
+      if tie_in_n_out:
+        centroids_v = centroids_k
       else:
-        centroids_k = tf.tile(centroids_k, [D, 1, 1])
         centroids_v = tf.tile(centroids_v, [D, 1, 1])
     self._centroids_k = centroids_k
     self._centroids_v = centroids_v
@@ -92,27 +92,33 @@ class KDQuantizer(object):
       # Compute distance (in a metric) between inputs and centroids_k
       # the response is in the shape of (batch_size, D, K)
       if self._query_metric == "euclidean":
-        response = -tf.reduce_sum(
-            (tf.expand_dims(inputs, 2) - tf.expand_dims(centroids_k, 0))**2, -1)
-        # Alternative computation:
-        # norm_1 = tf.reduce_sum(inputs**2, -1, keep_dims=True)  # (bs, D, 1)
-        # norm_2 = tf.expand_dims(tf.reduce_sum(centroids_k**2, -1), 0)  # (1, D, K)
-        # dot = tf.matmul(centroids_k, tf.transpose(inputs, perm=[1, 2, 0]))  # (D, K, bs)
-        # response = -norm_1 + 2 * tf.transpose(dot, perm=[2, 0, 1]) - norm_2
+        norm_1 = tf.reduce_sum(inputs**2, -1, keep_dims=True)  # (bs, D, 1)
+        norm_2 = tf.expand_dims(tf.reduce_sum(centroids_k**2, -1), 0)  # (1, D, K)
+        dot = tf.matmul(tf.transpose(inputs, perm=[1, 0, 2]),
+                        tf.transpose(centroids_k, perm=[0, 2, 1]))  # (D, bs, K)
+        response = -norm_1 + 2 * tf.transpose(dot, perm=[1, 0, 2]) - norm_2
       elif self._query_metric == "cosine":
         inputs = tf.nn.l2_normalize(inputs, -1)
         centroids_k = tf.nn.l2_normalize(centroids_k, -1)
-        response = tf.reduce_sum(
-            (tf.expand_dims(inputs, 2) * tf.expand_dims(centroids_k, 0)), -1)
+        response = tf.matmul(tf.transpose(inputs, perm=[1, 0, 2]),
+                        tf.transpose(centroids_k, perm=[0, 2, 1]))  # (D, bs, K)
+        response = tf.transpose(response, perm=[1, 0, 2])
       elif self._query_metric == "dot":
-        response = tf.reduce_sum(
-            (tf.expand_dims(inputs, 2) * tf.expand_dims(centroids_k, 0)), -1)
+        response = tf.matmul(tf.transpose(inputs, perm=[1, 0, 2]),
+                        tf.transpose(centroids_k, perm=[0, 2, 1]))  # (D, bs, K)
+        response = tf.transpose(response, perm=[1, 0, 2])
       else:
         raise ValueError("Unknown metric {}".format(self._query_metric))
       response = tf.reshape(response, [-1, self._D, self._K])
       if self._softmax_BN:
+        # response = tf.contrib.layers.instance_norm(
+        #    response, scale=False, center=False,
+        #    trainable=False, data_format="NCHW")
         response = tf.layers.batch_normalization(
             response, scale=False, center=False, training=is_training)
+        # Layer norm as alternative to BN.
+        # response = tf.contrib.layers.layer_norm(
+        #    response, scale=False, center=False)
       response_prob = tf.nn.softmax(response / self._tau, -1)
 
       # Compute the codes based on response.
@@ -125,8 +131,6 @@ class KDQuantizer(object):
         neighbor_idxs = codes
 
       # Compute the outputs, which has shape (batch_size, D, d_out)
-      # If tie_in_n_out: pass gradient via softmax for selection of centroids_k,
-      # ELse: pass gradient via inputs for selection of centroids_k.
       if self._tie_in_n_out:
         if not self._shared_centroids:
           D_base = tf.convert_to_tensor(
@@ -143,13 +147,10 @@ class KDQuantizer(object):
         nb_idxs_onehot = response_prob - tf.stop_gradient(
             response_prob - nb_idxs_onehot)
         # nb_idxs_onehot = response_prob  # use continuous output
-
         outputs = tf.matmul(
             tf.transpose(nb_idxs_onehot, [1, 0, 2]),  # (D, bs, K)
             centroids_v)  # (D, bs, d)
-        outputs_final = tf.reshape(
-            tf.transpose(outputs, [1, 0, 2]),
-            [-1, self._D, self._d_out])
+        outputs_final = tf.transpose(outputs, [1, 0, 2])
 
       # Add regularization for updating centroids / stabilization.
       if is_training:
