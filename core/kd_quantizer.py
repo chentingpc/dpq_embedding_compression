@@ -52,16 +52,12 @@ class KDQuantizer(object):
     # Create centroids for keys and values.
     D_to_create = 1 if shared_centroids else D
     centroids_k = tf.get_variable(
-        "centroids_k",
-        [D_to_create, K, d_in],
-        initializer=tf.random_uniform_initializer(-0.02, 0.02))
+        "centroids_k", [D_to_create, K, d_in])
     if tie_in_n_out:
       centroids_v = centroids_k
     else:
       centroids_v = tf.get_variable(
-          "centroids_v",
-          [D_to_create, K, d_out],
-          initializer=tf.random_uniform_initializer(-0.02, 0.02))
+          "centroids_v", [D_to_create, K, d_out])
     if shared_centroids:
       centroids_k = tf.tile(centroids_k, [D, 1, 1])
       if tie_in_n_out:
