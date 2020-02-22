@@ -27,12 +27,12 @@ For text classification datasets (other than ag_news), please download them from
 
 ## Cite
 
-Please cite [our paper](https://arxiv.org/abs/1908.xxxx) if you find it helpful in your own work:
+Please cite [our paper](https://arxiv.org/abs/1908.09756) if you find it helpful in your own work:
 
 ```
 @article{dpq2019,
   title={Differentiable Product Quantization for End-to-End Embedding Compression,
-  author={Ting Chen, Yizhou Sun}
+  author={Ting Chen, Lala Li, Yizhou Sun}
   journal={CoRR},
   volume={abs/1908.09756},
   year={2019},
