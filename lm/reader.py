@@ -92,7 +92,7 @@ def ptb_raw_data(dataset="ptb", data_path=None, return_id2word=False):
   test_data = _file_to_word_ids(test_path, word_to_id)
   vocabulary = len(word_to_id)
   if return_id2word:
-    id2word = dict([(_id, word) for word, _id in word_to_id.iteritems()])
+    id2word = dict([(_id, word) for word, _id in word_to_id.items()])
     id2word_list = [
         id2word[i] if i == _id else -1 for i, _id in enumerate(sorted(id2word))]
     if len(id2word) != len(id2word_list):

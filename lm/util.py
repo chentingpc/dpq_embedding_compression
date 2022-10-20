@@ -18,7 +18,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-from functools import partial
+from functools import partial, reduce
 import tensorflow as tf
 
 from tensorflow.core.framework import variable_pb2
