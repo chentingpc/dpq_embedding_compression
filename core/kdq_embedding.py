@@ -14,8 +14,8 @@ def full_embed(input, vocab_size, emb_size, hparams=None,
     Returns:
       input_emb: float tensor, embedding for entity idxs.
     """
-    with tf.variable_scope(name):
-        embedding = tf.get_variable("embedding", [vocab_size, emb_size])
+    with tf.compat.v1.variable_scope(name):
+        embedding = tf.compat.v1.get_variable("embedding", [vocab_size, emb_size])
         input_emb = tf.nn.embedding_lookup(embedding, input)
     return input_emb
 
@@ -44,8 +44,8 @@ def kdq_embed(input, vocab_size, emb_size, hparams=None,
     d_out = d if hparams.additive_quantization else d//D
     out_size = [D, emb_size] if hparams.additive_quantization else [emb_size]
 
-    with tf.variable_scope(name, reuse=tf.AUTO_REUSE):
-        query_wemb = tf.get_variable(
+    with tf.compat.v1.variable_scope(name, reuse=tf.compat.v1.AUTO_REUSE):
+        query_wemb = tf.compat.v1.get_variable(
             "query_wemb", [vocab_size, D * d_in], dtype=tf.float32)
         idxs = tf.reshape(input, [-1])
         input_emb = tf.nn.embedding_lookup(query_wemb, idxs)  # (bs*len, d)

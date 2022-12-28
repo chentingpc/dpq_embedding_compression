@@ -6,12 +6,12 @@ import sys
 import time
 import numpy as np
 import tensorflow as tf
-import cPickle as pickle
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # TODO: avoid the OutOfRangeError msg.
 
 sys.path.insert(0, "../lm")
 
-flags = tf.flags
+flags = tf.compat.v1.flags
 FLAGS = flags.FLAGS
 flags.DEFINE_string("dataset", None, "")
 flags.DEFINE_string("data_dir", None, "")
@@ -42,27 +42,27 @@ def main(_):
         FLAGS.dataset, FLAGS.data_dir, FLAGS.batch_size)
     flags.DEFINE_integer("vocab_size", len(vocab), 'Auto add vocab size')
 
-    with tf.name_scope("Train"):
-        with tf.variable_scope("model", reuse=False):
+    with tf.compat.v1.name_scope("Train"):
+        with tf.compat.v1.variable_scope("model", reuse=False):
             m = Model()
             loss_train, preds_train, train_op = m.forward(
                 X_train, y_train, is_training=True)
-    with tf.name_scope("Test"):
-        with tf.variable_scope("model", reuse=True):
+    with tf.compat.v1.name_scope("Test"):
+        with tf.compat.v1.variable_scope("model", reuse=True):
             loss_test, preds_test, _ = m.forward(
                 X_test, y_test, is_training=False)
 
     # Verbose.
     print("FLAGS:")
-    for key, value in tf.flags.FLAGS.__flags.items():
+    for key, value in tf.compat.v1.flags.FLAGS.__flags.items():
         print(key, value._value)
     print("Number of trainable params: {}".format(util.get_parameter_count()))
-    print(tf.trainable_variables())
+    print(tf.compat.v1.trainable_variables())
 
     # Training session.
     init_feed_dict = {X_train_holder: X_train_d, X_test_holder: X_test_d}
-    sv = tf.train.Supervisor(saver=None, init_feed_dict=init_feed_dict)
-    config_proto = tf.ConfigProto(allow_soft_placement=True)
+    sv = tf.compat.v1.train.Supervisor(saver=None, init_feed_dict=init_feed_dict)
+    config_proto = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     config_proto.gpu_options.allow_growth = True
     with sv.managed_session(config=config_proto) as sess:
         del X_train_d, X_test_d
@@ -101,4 +101,4 @@ def main(_):
 
 
 if __name__ == "__main__":
-    tf.app.run()
+    tf.compat.v1.app.run()

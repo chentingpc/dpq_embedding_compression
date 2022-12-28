@@ -6,12 +6,12 @@ def safer_log(x, eps=1e-10):
 
     Note that if x.dtype=tf.float16, \forall eps, eps < 3e-8, is equal to zero.
     """
-    return tf.log(x + eps)
+    return tf.compat.v1.log(x + eps)
 
 
 def sample_gumbel(shape):
     """Sample from Gumbel(0, 1)"""
-    U = tf.random_uniform(shape, minval=0, maxval=1)
+    U = tf.compat.v1.random_uniform(shape, minval=0, maxval=1)
     return -safer_log(-safer_log(U))
 
 
@@ -51,12 +51,12 @@ class KDQuantizer(object):
 
         # Create centroids for keys and values.
         D_to_create = 1 if shared_centroids else D
-        centroids_k = tf.get_variable(
+        centroids_k = tf.compat.v1.get_variable(
             "centroids_k", [D_to_create, K, d_in])
         if tie_in_n_out:
             centroids_v = centroids_k
         else:
-            centroids_v = tf.get_variable(
+            centroids_v = tf.compat.v1.get_variable(
                 "centroids_v", [D_to_create, K, d_out])
         if shared_centroids:
             centroids_k = tf.tile(centroids_k, [D, 1, 1])
@@ -110,7 +110,7 @@ class KDQuantizer(object):
                 # response = tf.contrib.layers.instance_norm(
                 #    response, scale=False, center=False,
                 #    trainable=False, data_format="NCHW")
-                response = tf.layers.batch_normalization(
+                response = tf.compat.v1.layers.batch_normalization(
                     response, scale=False, center=False, training=is_training)
                 # Layer norm as alternative to BN.
                 # response = tf.contrib.layers.layer_norm(
@@ -169,17 +169,17 @@ class KDQuantizer(object):
                     # entropy regularization
                     # reg = - beta * tf.reduce_mean(
                     #    tf.reduce_sum(response_prob * safer_log(response_prob), [2]))
-                tf.add_to_collection(tf.GraphKeys.REGULARIZATION_LOSSES, reg)
+                tf.compat.v1.add_to_collection(tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES, reg)
 
             return codes, outputs_final
 
 
 if __name__ == "__main__":
     # VQ
-    with tf.variable_scope("VQ"):
+    with tf.compat.v1.variable_scope("VQ"):
         kdq_demo = KDQuantizer(100, 10, 5, 5, True, "euclidean")
     codes_vq, outputs_vq = kdq_demo.forward(tf.random_normal([64, 10, 5]))
     # tempering softmax
-    with tf.variable_scope("tempering_softmax"):
+    with tf.compat.v1.variable_scope("tempering_softmax"):
         kdq_demo = KDQuantizer(100, 10, 5, 10, False, "dot")
     codes_ts, outputs_ts = kdq_demo.forward(tf.random_normal([64, 10, 5]))

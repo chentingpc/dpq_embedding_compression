@@ -2,6 +2,8 @@ import os
 import numpy as np
 import tensorflow as tf
 
+tf.compat.v1.disable_eager_execution()
+
 
 def get_arrays(data_dir):
     data = np.load(os.path.join(data_dir, "data-simplified.npz"))
@@ -27,12 +29,12 @@ def batchify_small(X, y, batch_size, num_epochs, reinitializer, is_train):
     dataset = dataset.batch(batch_size).repeat(num_epochs)
 
     if reinitializer:
-        iterator = tf.data.Iterator.from_structure(
+        iterator = tf.compat.v1.data.Iterator.from_structure(
             dataset.output_types, dataset.output_shapes)
         initializer = iterator.make_initializer(dataset)
         X, y = iterator.get_next()
     else:
-        X, y = dataset.make_one_shot_iterator().get_next()
+        X, y = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
         initializer = None
     return X, y, initializer
 
@@ -56,15 +58,15 @@ def batchify(X, y, batch_size, num_epochs, reinitializer, is_train):
     dataset = dataset.batch(batch_size).repeat(num_epochs)
 
     if reinitializer:
-        iterator = tf.data.Iterator.from_structure(
-            dataset.output_types, dataset.output_shapes)
+        iterator = tf.compat.v1.data.Iterator.from_structure(
+            tf.compat.v1.data.get_output_types(dataset), tf.compat.v1.data.get_output_shapes(dataset))
         initializer = iterator.make_initializer(dataset)
         idxs = iterator.get_next()
     else:
-        idxs = dataset.make_one_shot_iterator().get_next()
+        idxs = tf.compat.v1.data.make_one_shot_iterator(dataset).get_next()
         initializer = None
 
-    X, y = tf.nn.embedding_lookup(X, idxs), tf.nn.embedding_lookup(y, idxs)
+    X, y = tf.nn.embedding_lookup(params=X, ids=idxs), tf.nn.embedding_lookup(params=y, ids=idxs)
     return X, y, initializer
 
 
@@ -72,9 +74,9 @@ def get_data(data_name, data_dir, batch_size):
     X_train_d, y_train, X_test_d, y_test, vocab = get_arrays(data_dir)
     num_classes = len(set(y_train))
     with tf.device("/cpu:0"):  # DEBUG
-        X_train_holder = tf.placeholder(tf.int32, shape=X_train_d.shape)
+        X_train_holder = tf.compat.v1.placeholder(tf.int32, shape=X_train_d.shape)
         X_train = tf.Variable(X_train_holder, trainable=False)
-        X_test_holder = tf.placeholder(tf.int32, shape=X_test_d.shape)
+        X_test_holder = tf.compat.v1.placeholder(tf.int32, shape=X_test_d.shape)
         X_test = tf.Variable(X_test_holder, trainable=False)
         X_train, y_train, _ = batchify(
             X_train, y_train, batch_size, None, False, True)
@@ -96,8 +98,8 @@ if __name__ == "__main__":
     (X_train_d, X_test_d, X_train_holder, X_test_holder, X_train, y_train,
         X_test, y_test, test_reinitializer, vocab) = get_data(
         data_name, data_dir, batch_size)
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer(),
+    with tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer(),
                  feed_dict={X_train_holder: X_train_d, X_test_holder: X_test_d})
         del X_train_d, X_test_d
         sess.run(test_reinitializer)

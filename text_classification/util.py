@@ -18,10 +18,11 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-from functools import partial
+from functools import partial, reduce
 import tensorflow as tf
+import tensorflow_addons as tfa
 
-FLAGS = tf.flags.FLAGS
+FLAGS = tf.compat.v1.flags.FLAGS
 
 eps_micro = 1e-15  # tf.float32 sensible.
 eps_tiny = 1e-10   # tf.float32 sensible.
@@ -50,20 +51,20 @@ def get_activation(name):
 def get_optimizer(name):
     name = name.lower()
     if name == "sgd":
-        optimizer = tf.train.GradientDescentOptimizer
+        optimizer = tf.compat.v1.train.GradientDescentOptimizer
     elif name == "momentum":
-        optimizer = partial(tf.train.MomentumOptimizer,
+        optimizer = partial(tf.compat.v1.train.MomentumOptimizer,
                             momentum=0.05, use_nesterov=True)
     elif name == "adam":
-        optimizer = tf.train.AdamOptimizer
+        optimizer = tf.compat.v1.train.AdamOptimizer
         # optimizer = partial(tf.train.AdamOptimizer, beta1=0.5, beta2=0.9)
     elif name == "lazy_adam":
-        optimizer = tf.contrib.opt.LazyAdamOptimizer
+        optimizer = tfa.optimizers.LazyAdam # TODO: migrate to tf2, global_step not supported
         # optimizer = partial(tf.contrib.opt.LazyAdamOptimizer, beta1=0.5, beta2=0.9)
     elif name == "adagrad":
-        optimizer = tf.train.AdagradOptimizer
+        optimizer = tf.compat.v1.train.AdagradOptimizer
     elif name == "rmsprop":
-        optimizer = tf.train.RMSPropOptimizer
+        optimizer = tf.compat.v1.train.RMSPropOptimizer
     else:
         raise ValueError("Unknown optimizer name {}.".format(name))
 
@@ -71,7 +72,7 @@ def get_optimizer(name):
 
 
 def get_parameter_count(excludings=None, display_count=True):
-    trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+    trainables = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
     count = 0
     for var in trainables:
         ignored = False
@@ -83,7 +84,7 @@ def get_parameter_count(excludings=None, display_count=True):
         if ignored:
             continue
         if var.shape == tf.TensorShape(None):
-            tf.logging.warn("var {} has unknown shape and it is not counted.".format(
+            tf.compat.v1.logging.warn("var {} has unknown shape and it is not counted.".format(
                 var.name))
             continue
         if var.shape.as_list() == []:

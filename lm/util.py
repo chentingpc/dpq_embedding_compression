@@ -23,9 +23,9 @@ import tensorflow as tf
 
 from tensorflow.core.framework import variable_pb2
 from tensorflow.core.protobuf import rewriter_config_pb2
-from tensorflow.contrib.tensorboard.plugins import projector
+from tensorboard.plugins import projector
 
-FLAGS = tf.flags.FLAGS
+FLAGS = tf.compat.v1.flags.FLAGS
 
 eps_micro = 1e-15  # tf.float32 sensible.
 eps_tiny = 1e-10   # tf.float32 sensible.
@@ -34,16 +34,16 @@ eps_small = 3e-8   # tf.float16 sensible.
 
 def export_state_tuples(state_tuples, name):
     for state_tuple in state_tuples:
-        tf.add_to_collection(name, state_tuple.c)
-        tf.add_to_collection(name, state_tuple.h)
+        tf.compat.v1.add_to_collection(name, state_tuple.c)
+        tf.compat.v1.add_to_collection(name, state_tuple.h)
 
 
 def import_state_tuples(state_tuples, name, num_replicas):
     restored = []
     for i in range(len(state_tuples) * num_replicas):
-        c = tf.get_collection_ref(name)[2 * i + 0]
-        h = tf.get_collection_ref(name)[2 * i + 1]
-        restored.append(tf.contrib.rnn.LSTMStateTuple(c, h))
+        c = tf.compat.v1.get_collection_ref(name)[2 * i + 0]
+        h = tf.compat.v1.get_collection_ref(name)[2 * i + 1]
+        restored.append(tf.nn.rnn_cell.LSTMStateTuple(c, h))
     return tuple(restored)
 
 
@@ -108,7 +108,7 @@ def safer_log(x, eps=eps_micro):
 
     Note that if x.dtype=tf.float16, \forall eps, eps < 3e-8, is equal to zero.
     """
-    return tf.log(x + eps)
+    return tf.math.log(x + eps)
 
 
 def get_activation(name):
@@ -153,20 +153,20 @@ def filter_activation_fn():
 def get_optimizer(name):
     name = name.lower()
     if name == "sgd":
-        optimizer = tf.train.GradientDescentOptimizer
+        optimizer = tf.compat.v1.train.GradientDescentOptimizer
     elif name == "momentum":
-        optimizer = partial(tf.train.MomentumOptimizer,
+        optimizer = partial(tf.compat.v1.train.MomentumOptimizer,
                             momentum=0.05, use_nesterov=True)
     elif name == "adam":
-        optimizer = tf.train.AdamOptimizer
+        optimizer = tf.compat.v1.train.AdamOptimizer
         # optimizer = partial(tf.train.AdamOptimizer, beta1=0.5, beta2=0.9)
     elif name == "lazy_adam":
         optimizer = tf.contrib.opt.LazyAdamOptimizer
         # optimizer = partial(tf.contrib.opt.LazyAdamOptimizer, beta1=0.5, beta2=0.9)
     elif name == "adagrad":
-        optimizer = tf.train.AdagradOptimizer
+        optimizer = tf.compat.v1.train.AdagradOptimizer
     elif name == "rmsprop":
-        optimizer = tf.train.RMSPropOptimizer
+        optimizer = tf.compat.v1.train.RMSPropOptimizer
     else:
         raise ValueError("Unknown optimizer name {}.".format(name))
 
@@ -178,7 +178,7 @@ def replace_list_element(data_list, x, y):
 
 
 def get_parameter_count(excludings=None, display_count=True):
-    trainables = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES)
+    trainables = tf.compat.v1.get_collection(tf.compat.v1.GraphKeys.TRAINABLE_VARIABLES)
     count = 0
     for var in trainables:
         ignored = False
@@ -190,7 +190,7 @@ def get_parameter_count(excludings=None, display_count=True):
         if ignored:
             continue
         if var.shape == tf.TensorShape(None):
-            tf.logging.warn("var {} has unknown shape and it is not counted.".format(
+            tf.compat.v1.logging.warn("var {} has unknown shape and it is not counted.".format(
                 var.name))
             continue
         if var.shape.as_list() == []:
@@ -237,7 +237,7 @@ def save_emb_visualize_meta(save_path,
         embedding = config.embeddings.add()
         embedding.tensor_name = emb_var_name
         embedding.metadata_path = metadata_path
-    summary_writer = tf.summary.FileWriter(save_path)
+    summary_writer = tf.compat.v1.summary.FileWriter(save_path)
     projector.visualize_embeddings(summary_writer, config)
 
 

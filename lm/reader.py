@@ -29,7 +29,7 @@ Py3 = sys.version_info[0] == 3
 
 
 def _read_words(filename):
-    with tf.gfile.GFile(filename, "r") as f:
+    with tf.io.gfile.GFile(filename, "r") as f:
         if Py3:
             return f.read().replace("\n", "<eos>").split()
         else:
@@ -122,22 +122,22 @@ def ptb_producer(raw_data, batch_size, num_steps, name=None):
     Raises:
       tf.errors.InvalidArgumentError: if batch_size or num_steps are too high.
     """
-    with tf.name_scope(name, "PTBProducer", [raw_data, batch_size, num_steps]):
-        raw_data = tf.convert_to_tensor(raw_data, name="raw_data", dtype=tf.int32)
+    with tf.compat.v1.name_scope(name): #, "PTBProducer", [raw_data, batch_size, num_steps]):
+        raw_data = tf.convert_to_tensor(value=raw_data, name="raw_data", dtype=tf.int32)
 
-        data_len = tf.size(raw_data)
+        data_len = tf.size(input=raw_data)
         batch_len = data_len // batch_size
         data = tf.reshape(raw_data[0: batch_size * batch_len],
                           [batch_size, batch_len])
 
         epoch_size = (batch_len - 1) // num_steps
-        assertion = tf.assert_positive(
+        assertion = tf.compat.v1.assert_positive(
             epoch_size,
             message="epoch_size == 0, decrease batch_size or num_steps")
         with tf.control_dependencies([assertion]):
             epoch_size = tf.identity(epoch_size, name="epoch_size")
 
-        i = tf.train.range_input_producer(epoch_size, shuffle=False).dequeue()
+        i = tf.compat.v1.train.range_input_producer(epoch_size, shuffle=False).dequeue()
         x = tf.strided_slice(data, [0, i * num_steps],
                              [batch_size, (i + 1) * num_steps])
         x.set_shape([batch_size, num_steps])
